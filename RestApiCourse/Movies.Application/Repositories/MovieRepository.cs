@@ -45,5 +45,12 @@ namespace Movies.Application.Repositories
 
             return Task.FromResult(moviewRemoved);
         }
+
+        public Task<Movie?> GetBySlugAsync(string slug)
+        {
+            var movie = _movies.SingleOrDefault(x => x.Slug == slug);
+
+            return Task.FromResult(movie);
+        }
     }
 }
