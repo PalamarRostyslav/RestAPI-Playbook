@@ -57,6 +57,10 @@ nunit-*.xml
 [Rr]eleasePS/
 dlldata.c
 
+# Local purposes
+appsettings.Development.json
+.env
+
 # Benchmark Results
 BenchmarkDotNet.Artifacts/
 
