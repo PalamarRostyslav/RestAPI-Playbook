@@ -2,6 +2,8 @@
 using Movies.Application.Database;
 using Movies.Application.Repositories;
 using Movies.Application.Services;
+using Movies.Application.Validators;
+using FluentValidation;
 
 namespace Movies.Application.DI
 {
@@ -11,6 +13,7 @@ namespace Movies.Application.DI
         {
             services.AddSingleton<IMovieRepository, MovieRepository>();
             services.AddSingleton<IMovieService, MovieService>();
+            services.AddValidatorsFromAssemblyContaining<IApplicationMarker>(ServiceLifetime.Singleton);
 
             return services;
         }
