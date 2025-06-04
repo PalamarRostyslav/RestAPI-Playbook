@@ -8,7 +8,7 @@ namespace Movies.Application.Database
         /// Creates a new database connection.
         /// </summary>
         /// <returns>A new instance of a database connection.</returns>
-        Task<IDbConnection> CreateConnectionAsync();
+        Task<IDbConnection> CreateConnectionAsync(CancellationToken cancellationToken = default);
     }
 
     public class NpgsqlDbConnectionFactory : IDbConnectionFactory
@@ -20,10 +20,10 @@ namespace Movies.Application.Database
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         }
 
-        public async Task<IDbConnection> CreateConnectionAsync()
+        public async Task<IDbConnection> CreateConnectionAsync(CancellationToken cancellationToken)
         {
             var connection = new Npgsql.NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
 
             return connection;
         }
