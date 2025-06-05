@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Movies.API.Endpoints;
 using Movies.API.Mapping;
-using Movies.Application.Repositories;
 using Movies.Application.Services;
 using Movies.Contracts.Requests;
-using System.Threading;
 
 namespace Movies.API.Controllers
 {
