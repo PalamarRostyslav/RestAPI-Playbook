@@ -27,6 +27,8 @@ namespace Movies.API.Mapping
                 Slug = movie.Slug,
                 YearOfRelease = movie.YearOfRelease,
                 Genres = movie.Genres.ToList(),
+                Rating = movie.Rating,
+                UserRating = movie.UserRating
             };
         }
 
@@ -47,6 +49,16 @@ namespace Movies.API.Mapping
                 YearOfRelease = request.YearOfRelease,
                 Genres = request.Genres.ToList(),
             };
+        }
+
+        public static IEnumerable<MovieRatingResponse> MapToResponse(this IEnumerable<MovieRating> ratings)
+        {
+            return ratings.Select(r => new MovieRatingResponse
+            {
+                MovieId = r.MovieId,
+                Rating = r.Rating,
+                Slug = r.Slug,
+            });
         }
 
     }

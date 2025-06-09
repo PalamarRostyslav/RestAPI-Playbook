@@ -20,6 +20,8 @@ namespace Movies.Application.Database
             await connection.ExecuteAsync("""create unique index if not exists movies_slug_idx on Movies using btree(slug);""");
 
             await connection.ExecuteAsync("""create table if not exists genres ( movieId UUID references movies (Id), name TEXT not null);""");
+
+            await connection.ExecuteAsync("""create table if not exists ratings ( userid UUID, movieid UUID references movies (Id), rating integer not null, primary key (userid, movieid) );""");
         }
     }
 }
