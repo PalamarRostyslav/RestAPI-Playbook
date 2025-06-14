@@ -2,7 +2,6 @@
 using Movies.Application.Database;
 using Movies.Application.Repositories;
 using Movies.Application.Services;
-using Movies.Application.Validators;
 using FluentValidation;
 
 namespace Movies.Application.DI
