@@ -48,6 +48,11 @@ namespace Movies.Application.Services
             return await _movieRepository.GetBySlugAsync(slug, userId, token);
         }
 
+        public async Task<int> GetCountAsync(string? title, int? yearOfRelease, CancellationToken cancellationToken = default)
+        {
+            return await _movieRepository.GetCountAsync(title, yearOfRelease, cancellationToken);
+        }
+
         public async Task<Movie?> UpdateAsync(Movie movie, Guid? userId, CancellationToken token = default)
         {
             await _movieValidator.ValidateAndThrowAsync(movie, token);
