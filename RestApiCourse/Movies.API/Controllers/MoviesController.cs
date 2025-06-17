@@ -19,7 +19,6 @@ namespace Movies.API.Controllers
         public MoviesController(IMovieService movieService)
         {
             _movieService = movieService; 
-
         }
 
         [Authorize(AuthConstants.TrustedMemberPolicyName)]
@@ -35,7 +34,6 @@ namespace Movies.API.Controllers
             return CreatedAtAction(nameof(Get), new { idOrSlug = movie.Id, }, movie);
         }
 
-        [ApiVersion(1.0)]
         [AllowAnonymous]
         [HttpGet(ApiEndpoints.Movies.Get)]
         public async Task<IActionResult> Get([FromRoute] string idOrSlug, [FromServices] LinkGenerator linkGenerator, CancellationToken cancellationToken)

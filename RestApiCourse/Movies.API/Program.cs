@@ -1,10 +1,14 @@
 using Asp.Versioning;
+using Asp.Versioning.Conventions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Movies.API.Auth;
 using Movies.API.Mapping;
+using Movies.API.Swagger;
 using Movies.Application.Database;
 using Movies.Application.DI;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,16 +48,32 @@ builder.Services.AddAuthorization(x =>
     });
 });
 
-builder.Services.AddApiVersioning(options=>
+builder.Services.AddApiVersioning(x =>
 {
-    options.DefaultApiVersion = new ApiVersion(1.0);
-    options.AssumeDefaultVersionWhenUnspecified = true;
-    options.ReportApiVersions = true;
-    options.ApiVersionReader = new MediaTypeApiVersionReader("api-version");
-}).AddMvc();
+    x.DefaultApiVersion = new ApiVersion(1.0);
+    x.AssumeDefaultVersionWhenUnspecified = true;
+    x.ReportApiVersions = true;
+    x.ApiVersionReader = ApiVersionReader.Combine(
+                           new UrlSegmentApiVersionReader(),
+                           new QueryStringApiVersionReader("api-version"),
+                           new HeaderApiVersionReader("X-Version"),
+                           new MediaTypeApiVersionReader("x-version"));
+}).AddMvc(options =>
+{
+    options.Conventions.Add(new VersionByNamespaceConvention());
+
+}).AddApiExplorer(setup =>
+{
+    setup.GroupNameFormat = "'v'VVV";
+    setup.SubstituteApiVersionInUrl = true;
+});
+
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+builder.Services.AddSwaggerGen(x => {
+    x.OperationFilter<SwaggerDefaultValues>();
+}); 
 builder.Services.AddAplication();
 
 var connectionString = config.GetSection("Database")["ConnectionString"];
@@ -63,7 +83,16 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(x =>
+    {
+        foreach (var description in app.DescribeApiVersions())
+        {
+            var groupName = description.GroupName;
+            x.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName);
+        }
+    });
 }
 
 app.UseHttpsRedirection();
