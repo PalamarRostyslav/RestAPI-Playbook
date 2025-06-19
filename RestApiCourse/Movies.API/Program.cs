@@ -4,14 +4,24 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Movies.API.Auth;
+using Movies.API.Health;
 using Movies.API.Mapping;
 using Movies.API.Swagger;
 using Movies.Application.Database;
 using Movies.Application.DI;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
+using Serilog;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text.Json;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.File("healthchecks.log", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
 var config = builder.Configuration;
 
 builder.Services.AddAuthentication(x =>
@@ -68,8 +78,11 @@ builder.Services.AddApiVersioning(x =>
     setup.SubstituteApiVersionInUrl = true;
 });
 
-
 builder.Services.AddControllers();
+
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name);
+builder.Services.AddHostedService<HealthCheckLoggerService>();
+
 builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 builder.Services.AddSwaggerGen(x => {
     x.OperationFilter<SwaggerDefaultValues>();
@@ -95,6 +108,28 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.MapHealthChecks("_health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        Log.Information("Health check endpoint called at {Time}. Status: {Status}", DateTimeOffset.Now, report.Status);
+
+        foreach (var entry in report.Entries)
+        {
+            Log.Information(" - {Key}: {Status} ({Description})", entry.Key, entry.Value.Status, entry.Value.Description);
+        }
+
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new { key = e.Key, value = e.Value.Status.ToString(), description = e.Value.Description })
+        });
+
+        await context.Response.WriteAsync(result);
+    }
+});
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
@@ -106,4 +141,12 @@ app.MapControllers();
 var dbInitializer = app.Services.GetRequiredService<DbInitializer>();
 await dbInitializer.InitializeAsync();
 
-app.Run();
+await app.StartAsync();
+
+foreach (var address in app.Urls)
+{
+    Log.Information("App is running now at {Address}", address);
+    Console.WriteLine($"App is running now at {address}");
+}
+
+await app.WaitForShutdownAsync();
