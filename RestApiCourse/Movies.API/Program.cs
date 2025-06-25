@@ -47,7 +47,7 @@ builder.Services.AddAuthorization(x =>
 {
     x.AddPolicy(AuthConstants.AdminUserPolicyName, policy =>
     {
-        policy.RequireClaim(AuthConstants.AdminUserClaimName, "true");
+        policy.AddRequirements(new AdminAuthRequirement(config["ApiKey"]!));
     });
 
     x.AddPolicy(AuthConstants.TrustedMemberPolicyName, policy =>
