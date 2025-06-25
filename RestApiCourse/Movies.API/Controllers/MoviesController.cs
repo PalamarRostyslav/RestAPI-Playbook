@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Movies.API.Auth;
 using Movies.API.Endpoints;
 using Movies.API.Mapping;
@@ -15,10 +16,12 @@ namespace Movies.API.Controllers
     public class MoviesController : ControllerBase
     {
         private readonly IMovieService _movieService;
+        private readonly IOutputCacheStore _outputCacheStore;
 
-        public MoviesController(IMovieService movieService)
+        public MoviesController(IMovieService movieService, IOutputCacheStore outputCacheStore)
         {
-            _movieService = movieService; 
+            _movieService = movieService;
+            _outputCacheStore = outputCacheStore;
         }
 
         [Authorize(AuthConstants.TrustedMemberPolicyName)]
@@ -31,6 +34,8 @@ namespace Movies.API.Controllers
 
             var result = await _movieService.CreateAsync(movie, cancellationToken);
 
+            await _outputCacheStore.EvictByTagAsync("movies", cancellationToken);
+
             var movieResponse = movie.MapToResponse();
 
             return CreatedAtAction(nameof(Get), new { idOrSlug = movie.Id, }, movie);
@@ -38,6 +43,7 @@ namespace Movies.API.Controllers
 
         [AllowAnonymous]
         [HttpGet(ApiEndpoints.Movies.Get)]
+        [OutputCache(PolicyName = "MovieCache")]
         [ProducesResponseType(typeof(MovieResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Get([FromRoute] string idOrSlug, [FromServices] LinkGenerator linkGenerator, CancellationToken cancellationToken)
@@ -79,6 +85,7 @@ namespace Movies.API.Controllers
         }
 
         [AllowAnonymous]
+        [OutputCache(PolicyName = "MovieCache")]
         [HttpGet(ApiEndpoints.Movies.GetAll)]
         [ProducesResponseType(typeof(MoviesResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll([FromQuery] GetAllMoviesRequest request, CancellationToken cancellationToken)
@@ -110,6 +117,7 @@ namespace Movies.API.Controllers
             {
                 return NotFound();
             }
+            await _outputCacheStore.EvictByTagAsync("movies", cancellationToken);
 
             var response = movie.MapToResponse();
             return Ok(response);
@@ -127,6 +135,8 @@ namespace Movies.API.Controllers
             {
                 return NotFound();
             }
+
+            await _outputCacheStore.EvictByTagAsync("movies", cancellationToken);
 
             return Ok();
         }
