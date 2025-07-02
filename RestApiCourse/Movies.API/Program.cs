@@ -14,6 +14,7 @@ using System.Text;
 using Serilog;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
+using Movies.API.Endpoints;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.File("healthchecks.log", rollingInterval: RollingInterval.Day)
@@ -69,15 +70,13 @@ builder.Services.AddApiVersioning(x =>
                            new QueryStringApiVersionReader("api-version"),
                            new HeaderApiVersionReader("X-Version"),
                            new MediaTypeApiVersionReader("x-version"));
-}).AddMvc(options =>
-{
-    options.Conventions.Add(new VersionByNamespaceConvention());
-
 }).AddApiExplorer(setup =>
 {
     setup.GroupNameFormat = "'v'VVV";
     setup.SubstituteApiVersionInUrl = true;
 });
+
+builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddOutputCache(x =>
 {
@@ -88,8 +87,6 @@ builder.Services.AddOutputCache(x =>
         .SetVaryByQuery(["title", "year", "sortBy", "page", "pageSize"])
         .Tag("movies"));
 });
-
-builder.Services.AddControllers();
 
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>(DatabaseHealthCheck.Name);
 builder.Services.AddHostedService<HealthCheckLoggerService>();
@@ -104,6 +101,8 @@ var connectionString = config.GetSection("Database")["ConnectionString"];
 builder.Services.AddDatabase(connectionString ?? throw new InvalidOperationException("Connection string 'Movies' not found."));
 
 var app = builder.Build();
+
+app.CreateApiVersionSet();
 
 if (app.Environment.IsDevelopment())
 {
@@ -149,7 +148,8 @@ app.UseAuthorization();
 app.UseOutputCache();
 
 app.UseMiddleware<ValidationMappingMiddleware>();
-app.MapControllers();
+
+app.MapApiEndpoints();
 
 var dbInitializer = app.Services.GetRequiredService<DbInitializer>();
 await dbInitializer.InitializeAsync();

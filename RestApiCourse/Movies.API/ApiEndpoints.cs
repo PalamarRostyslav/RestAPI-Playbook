@@ -1,4 +1,4 @@
-﻿namespace Movies.API.Endpoints
+﻿namespace Movies.API
 {
     public static class ApiEndpoints
     {
